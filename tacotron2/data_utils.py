@@ -9,15 +9,16 @@ from text import text_to_sequence
 
 class PPG_id_MelLoader(torch.utils.data.Dataset):
     """
-        1) loads PPG, id, audio pairs
-        2) reads PPG
-        3) normalizes id and converts them to sequences of one-hot vectors
+        1) loads PPG, audio pairs.
+        2) reads PPG.
+        3) extract speaker_id_embedding from audio files.
         3) computes mel-spectrograms from audio files.
-        sample: meian/meian_0000.wav|0|PPG_0.npy
+        sample: meian/meian_0000.wav|PPG/PPG_0.npy
     """
-    def __init__(self, audiopaths_and_PPG_and_id, hparams):
-        # 这个时候audiopaths_and_PPG_and_id是一个列表套列表[[audiopaths,id.PPG],[audiopaths,id.PPG]...]
-        self.audiopaths_and_PPG_and_id = load_filepaths_and_PPG_and_id(audiopaths_and_PPG_and_id)
+    def __init__(self, audiopaths_and_PPG, hparams):
+        # 这个时候audiopaths_and_PPG是一个列表套列表[[audiopaths,PPGpath],[audiopaths,PPGpath]...]
+        # 其中audiopaths是音频路径，PPGpath是存储PPG的npy文件
+        self.audiopaths_and_PPG = load_filepaths_and_PPG_and_id(audiopaths_and_PPG)
         
         self.max_wav_value = hparams.max_wav_value
         self.sampling_rate = hparams.sampling_rate
