@@ -22,6 +22,8 @@ inference:
 
 3、测试tacotron2模型的训练
 
-4、改变infer部分的代码，主要是model.py中，Tacotron类的inference（改成一个for循环，按片段送入decoder得到结果），以及Decoder类的inference（应该不大用动）
+4、改变infer部分的代码，主要是model.py中，Tacotron类的inference（要想想怎么送入decoder得到结果），以及Decoder类的inference（以片段的形式输出）
+
+还需要保留一下前后的padding
 
 5、wavenet前还需要一个buffer
