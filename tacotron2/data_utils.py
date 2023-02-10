@@ -4,8 +4,78 @@ import torch
 import torch.utils.data
 
 import layers
-from utils import load_wav_to_torch, load_filepaths_and_text
+from utils import load_wav_to_torch, load_filepaths_and_text, load_filepaths_and_PPG_and_id
 from text import text_to_sequence
+
+class PPG_id_MelLoader(torch.utils.data.Dataset):
+    """
+        1) loads PPG, id, audio pairs
+        2) reads PPG
+        3) normalizes id and converts them to sequences of one-hot vectors
+        3) computes mel-spectrograms from audio files.
+        sample: meian/meian_0000.wav|0|0.001,0.003,0.006,0.0009,0.07)0.001,0.003,0.006,0.0009,0.07)...
+    """
+    def __init__(self, audiopaths_and_PPG_and_id, hparams):
+        # 这个时候audiopaths_and_PPG_and_id是一个列表套列表[[audiopaths,id.PPG],[audiopaths,id.PPG]...]
+        self.audiopaths_and_PPG_and_id = load_filepaths_and_PPG_and_id(audiopaths_and_PPG_and_id)
+        
+        self.max_wav_value = hparams.max_wav_value
+        self.sampling_rate = hparams.sampling_rate
+        self.load_mel_from_disk = hparams.load_mel_from_disk
+        self.stft = layers.TacotronSTFT(
+            hparams.filter_length, hparams.hop_length, hparams.win_length,
+            hparams.n_mel_channels, hparams.sampling_rate, hparams.mel_fmin,
+            hparams.mel_fmax)
+        random.seed(hparams.seed)
+        # shuffle一下，让原来按顺序读入变成乱序
+        random.shuffle(self.audiopaths_and_PPG_and_id)
+
+    def get_mel_PPG_id_pair(self, audiopath_and_PPG_and_id):
+        # separate filename and PPG
+        audiopath, id, PPG = audiopath_and_PPG_and_id[0], audiopath_and_PPG_and_id[1], audiopath_and_PPG_and_id[2]
+        PPG = self.get_ppg(PPG)
+        id = torch.IntTensor(id)
+        mel = self.get_mel(audiopath)
+        return (PPG, id, mel)
+
+    def get_mel(self, filename):
+        if not self.load_mel_from_disk:
+            audio, sampling_rate = load_wav_to_torch(filename)
+            if sampling_rate != self.stft.sampling_rate:
+                raise ValueError("{} {} SR doesn't match target {} SR".format(
+                    sampling_rate, self.stft.sampling_rate))
+            audio_norm = audio / self.max_wav_value
+            audio_norm = audio_norm.unsqueeze(0)
+            audio_norm = torch.autograd.Variable(audio_norm, requires_grad=False)
+            melspec = self.stft.mel_spectrogram(audio_norm)
+            melspec = torch.squeeze(melspec, 0)
+        else:
+            melspec = torch.from_numpy(np.load(filename))
+            assert melspec.size(0) == self.stft.n_mel_channels, (
+                'Mel dimension mismatch: given {}, expected {}'.format(
+                    melspec.size(0), self.stft.n_mel_channels))
+
+        return melspec
+
+    def get_ppg(self, PPG, split_PPG=')', split_data=','):
+        # 这个PPG是将PPG一列一列分开后的列表，每一列都还是一整个字符串，先拆成列表
+        PPG_temp = [PPG.strip().split(split_PPG)]
+        PPG = []
+        # 每个data都是一个字符串，数据用','分隔
+        for data in PPG_temp:
+          PPG_data = [data.strip().split(split_data)]
+          # 转化为numpy数组再转化为torch.tensor
+          temp = torch.from_numpy(np.array(PPG_temp))
+          PPG.append(temp)
+        merged_PPG = torch.cat(PPG, -1)
+        return merged_PPG
+
+    def __getitem__(self, index):
+        # 等于是按行读入
+        return self.get_mel_PPG_id_pair(self.audiopaths_and_PPG_and_id[index])
+
+    def __len__(self):
+        return len(self.audiopaths_and_PPG_and_id)
 
 
 class TextMelLoader(torch.utils.data.Dataset):
