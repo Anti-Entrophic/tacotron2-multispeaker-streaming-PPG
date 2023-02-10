@@ -13,7 +13,7 @@ class PPG_id_MelLoader(torch.utils.data.Dataset):
         2) reads PPG
         3) normalizes id and converts them to sequences of one-hot vectors
         3) computes mel-spectrograms from audio files.
-        sample: meian/meian_0000.wav|0|0.001,0.003,0.006,0.0009,0.07)0.001,0.003,0.006,0.0009,0.07)...
+        sample: meian/meian_0000.wav|0|PPG_0.npy
     """
     def __init__(self, audiopaths_and_PPG_and_id, hparams):
         # 这个时候audiopaths_and_PPG_and_id是一个列表套列表[[audiopaths,id.PPG],[audiopaths,id.PPG]...]
