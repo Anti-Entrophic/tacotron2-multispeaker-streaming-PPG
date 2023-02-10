@@ -1,14 +1,16 @@
 # tacotron2-streaming-PPG
 
+The codes haven't been updated yet
+
 training  
 
-original: &nbsp; input: &nbsp; text(sequence)-wav pairs
+original:  input: &nbsp; text(sequence)-wav pairs
    
-   [batch_size, max_len, 512]
+&nbsp;&nbsp;  [batch_size, max_len, 512]
    
-now: &nbsp; input: &nbsp; PPG-wav pairs
+now:  input: &nbsp; PPG-wav pairs
 
-   [batch_size, frames, 音素个数]
+&nbsp;&nbsp;   [batch_size, frames, 音素个数]
 
 inference:
 
