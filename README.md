@@ -16,7 +16,11 @@ inference:
 
 进度： 
 1、将原本的data_utils.py中的Text_Mel_Loader改成PPG_Mel_Loader，删去不必要的text_cleaners等内容
+
 2、用Resemblyzer实现从wav中提取speaker_id的embedding（https://github.com/resemble-ai/Resemblyzer），整合进PPG作为输入
+
 3、测试tacotron2模型的训练
+
 4、改变infer部分的代码，主要是model.py中，Tacotron类的inference（改成一个for循环，按片段送入decoder得到结果），以及Decoder类的inference（应该不大用动）
+
 5、wavenet前还需要一个buffer
