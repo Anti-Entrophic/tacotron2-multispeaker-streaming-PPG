@@ -18,7 +18,7 @@ inference:
 
 1、将原本的data_utils.py中的Text_Mel_Loader改成PPG_Mel_Loader，删去不必要的text_cleaners等内容
 
-2、用Resemblyzer实现从wav中提取speaker_id的embedding（https://github.com/resemble-ai/Resemblyzer），整合进PPG作为输入
+2、用Resemblyzer实现从wav中提取speaker_id的embedding（https://github.com/resemble-ai/Resemblyzer ），整合进PPG作为输入
 
 3、测试tacotron2模型的训练
 
