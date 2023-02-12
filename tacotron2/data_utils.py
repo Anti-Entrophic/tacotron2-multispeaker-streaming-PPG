@@ -2,17 +2,20 @@ import random
 import numpy as np
 import torch
 import torch.utils.data
+from resemblyzer import VoiceEncoder, preprocess_wav
+from pathlib import Path
 
 import layers
 from utils import load_wav_to_torch, load_filepaths_and_text, load_filepaths_and_PPG_and_id
 from text import text_to_sequence
 
-class PPG_id_MelLoader(torch.utils.data.Dataset):
+class PPG_MelLoader(torch.utils.data.Dataset):
     """
         1) loads PPG, audio pairs.
         2) reads PPG.
         3) extract speaker_id_embedding from audio files.
-        3) computes mel-spectrograms from audio files.
+        4) concatenate speaker_id_embedding and PPG
+        5) computes mel-spectrograms from audio files.
         sample: meian/meian_0000.wav|PPG/PPG_0.npy
     """
     def __init__(self, audiopaths_and_PPG, hparams):
@@ -29,16 +32,32 @@ class PPG_id_MelLoader(torch.utils.data.Dataset):
             hparams.mel_fmax)
         random.seed(hparams.seed)
         # shuffle一下，让原来按顺序读入变成乱序
-        random.shuffle(self.audiopaths_and_PPG_and_id)
+        random.shuffle(self.audiopaths_and_PPG)
 
-    def get_mel_PPG_id_pair(self, audiopath_and_PPG_and_id):
-        # separate filename and PPG
-        audiopath, id, PPG = audiopath_and_PPG_and_id[0], audiopath_and_PPG_and_id[1], audiopath_and_PPG_and_id[2]
-        PPG = self.get_ppg(PPG)
-        id = torch.IntTensor(id)
+    def get_mel_PPG_pair(self, audiopath_and_PPG):
+        # separate audiopath and PPG
+        audiopath, PPG = audiopath_and_PPG[0], audiopath_and_PPG[1]
+        
+        # 拼接PPG和speaker_embedding
+        speaker_embedding = self.get_id(audiopath)
+        PPG = self.get_ppg(PPG, speaker_embedding)
+        
         mel = self.get_mel(audiopath)
-        return (PPG, id, mel)
+        return (PPG, mel)
 
+    def get_id(self, audiopath):
+        # 调用resemblyzer的VoiceEncoder做speaker embedding
+        encoder = VoiceEncoder()
+        fpath = Path(audiopath)
+        wav = preprocess_wav(fpath)
+        # 得到speaker embedding
+        speaker_embedding = encoder.embed_utterance(wav)
+        # 输出调试信息
+        # np.set_printoptions(precision=3, suppress=True)
+        # print(speaker_embedding)
+        #
+        return speaker_embedding
+    
     def get_mel(self, filename):
         if not self.load_mel_from_disk:
             audio, sampling_rate = load_wav_to_torch(filename)
@@ -58,25 +77,24 @@ class PPG_id_MelLoader(torch.utils.data.Dataset):
 
         return melspec
 
-    def get_ppg(self, PPG, split_PPG=')', split_data=','):
-        # 这个PPG是将PPG一列一列分开后的列表，每一列都还是一整个字符串，先拆成列表
-        PPG_temp = [PPG.strip().split(split_PPG)]
-        PPG = []
-        # 每个data都是一个字符串，数据用','分隔
-        for data in PPG_temp:
-          PPG_data = [data.strip().split(split_data)]
-          # 转化为numpy数组再转化为torch.tensor
-          temp = torch.from_numpy(np.array(PPG_temp))
-          PPG.append(temp)
-        merged_PPG = torch.cat(PPG, -1)
-        return merged_PPG
+    def get_ppg(self, PPG, speaker_embedding):
+        # 传入的PPG是npy文件的路径
+        # 还要考虑学长那边传过来的具体内容，做下路径处理
+        # 路径处理TODO
+        assert type(speaker_embedding) == "np.ndarray", "speaker_embedding的数据类型错误"
+        # 读入的是列表套列表，一个npy文件，[[第一帧的72个音素概率], [第二帧的72个音素概率], ... ]
+        PPG_temp = np.load(PPG)
+        # 应该还要动model.py里的Tacotron2 Class. 原本TextMelLoader只是传出text的sequence, 之后是在Tacotron2 Class里每个embedding成512维
+        for frame in PPG_temp:
+            frame = np.append(frame, speaker_embedding)
+        return PPG_temp
 
     def __getitem__(self, index):
         # 等于是按行读入
-        return self.get_mel_PPG_id_pair(self.audiopaths_and_PPG_and_id[index])
+        return self.get_mel_PPG_id_pair(self.audiopaths_and_PPG[index])
 
     def __len__(self):
-        return len(self.audiopaths_and_PPG_and_id)
+        return len(self.audiopaths_and_PPG)
 
 
 class TextMelLoader(torch.utils.data.Dataset):
