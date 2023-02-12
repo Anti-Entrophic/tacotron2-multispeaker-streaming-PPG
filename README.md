@@ -27,3 +27,6 @@ inference:
 还需要保留一下前后的padding
 
 5、wavenet前还需要一个buffer
+
+## update  
+2023.2.12 开始干活
