@@ -6,7 +6,7 @@ from resemblyzer import VoiceEncoder, preprocess_wav
 from pathlib import Path
 
 import layers
-from utils import load_wav_to_torch, load_filepaths_and_text, load_filepaths_and_PPG_and_id
+from utils import load_wav_to_torch, load_filepaths_and_text, load_filepaths_and_PPG
 from text import text_to_sequence
 
 class PPG_MelLoader(torch.utils.data.Dataset):
@@ -21,7 +21,7 @@ class PPG_MelLoader(torch.utils.data.Dataset):
     def __init__(self, audiopaths_and_PPG, hparams):
         # 这个时候audiopaths_and_PPG是一个列表套列表[[audiopaths,PPGpath],[audiopaths,PPGpath]...]
         # 其中audiopaths是音频路径，PPGpath是存储PPG的npy文件
-        self.audiopaths_and_PPG = load_filepaths_and_PPG_and_id(audiopaths_and_PPG)
+        self.audiopaths_and_PPG = load_filepaths_and_PPG(audiopaths_and_PPG)
         
         self.max_wav_value = hparams.max_wav_value
         self.sampling_rate = hparams.sampling_rate
