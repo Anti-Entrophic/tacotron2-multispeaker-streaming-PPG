@@ -121,10 +121,11 @@ class PPG_MelLoader_test(torch.utils.data.Dataset):
         # 这里后面的不是PPG了，是一长串列表里面是音素。
         audiopath, PPG = audiopath_and_PPG[0], audiopath_and_PPG[1]
         
-        print(type(PPG))
+        # print(type(PPG)) 是str
         
         # 首先我要先建立一个dict，对应音素和序号。
-        pho_map = create_map("/content/tacotron2/data/phoneme.characters")
+        pho_map = self.create_map("/content/tacotron2/data/phoneme.characters")
+        print("建立了音素和序号的map")
         
         # 先获取PPG和speaker_embedding
         speaker_embedding = self.get_id(audiopath)
@@ -136,7 +137,7 @@ class PPG_MelLoader_test(torch.utils.data.Dataset):
 
     def create_map(self, filepath):
         # 建立音素到序号的映射
-        with open(filename, encoding='utf-8') as f:
+        with open(filepath, encoding='utf-8') as f:
             it = 0
             pho_name = {}
             for line in f :
