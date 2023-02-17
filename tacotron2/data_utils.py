@@ -139,7 +139,7 @@ class PPG_MelLoader_test(torch.utils.data.Dataset):
         with open(filename, encoding='utf-8') as f:
             it = 0
             pho_name = {}
-            for line in f：
+            for line in f :
                 pho_name[line]  = i
                 i = i + 1
         return pho_name
