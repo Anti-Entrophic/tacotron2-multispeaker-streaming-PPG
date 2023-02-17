@@ -173,7 +173,8 @@ class Encoder(nn.Module):
     def forward(self, x, input_lengths):
         for conv in self.convolutions:
             x = F.dropout(F.relu(conv(x)), 0.5, self.training)
-
+        
+        # 交换1和2两个维度的位置
         x = x.transpose(1, 2)
 
         # pytorch tensor are not reversible, hence the conversion
@@ -471,17 +472,16 @@ class Tacotron2(nn.Module):
         self.postnet = Postnet(hparams)
 
     def parse_batch(self, batch):
-        text_padded, input_lengths, mel_padded, gate_padded, \
+        # 训练过程中，数据每次都先送到这里
+        PPG, mel_padded, gate_padded, \
             output_lengths = batch
-        text_padded = to_gpu(text_padded).long()
-        input_lengths = to_gpu(input_lengths).long()
-        max_len = torch.max(input_lengths.data).item()
+        PPG = to_gpu(PPG).float()
         mel_padded = to_gpu(mel_padded).float()
         gate_padded = to_gpu(gate_padded).float()
         output_lengths = to_gpu(output_lengths).long()
 
         return (
-            (text_padded, input_lengths, mel_padded, max_len, output_lengths),
+            (PPG, mel_padded, output_lengths),
             (mel_padded, gate_padded))
 
     def parse_output(self, outputs, output_lengths=None):
@@ -497,11 +497,10 @@ class Tacotron2(nn.Module):
         return outputs
 
     def forward(self, inputs):
-        text_inputs, text_lengths, mels, max_len, output_lengths = inputs
-        text_lengths, output_lengths = text_lengths.data, output_lengths.data
-
-        embedded_inputs = self.embedding(text_inputs).transpose(1, 2)
-
+        PPG, mels, output_lengths = inputs
+        output_lengths = output_lengths.data
+        
+        assert 0 ,"在encoder前结束" 
         encoder_outputs = self.encoder(embedded_inputs, text_lengths)
 
         mel_outputs, gate_outputs, alignments = self.decoder(
