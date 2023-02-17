@@ -8,3 +8,7 @@
 2、phoneme_test.csv
 
 短的，马上要拿来测试的
+
+3、phoneme.characters
+
+所有音素
