@@ -4,3 +4,7 @@
 
 链接：https://pan.baidu.com/s/1nsyyIyDMyKr3I1pRqbf-gA 
 提取码：npwh
+
+2、phoneme_test.csv
+
+短的，马上要拿来测试的
