@@ -141,8 +141,8 @@ class PPG_MelLoader_test(torch.utils.data.Dataset):
             it = 0
             pho_name = {}
             for line in f :
-                pho_name[line]  = i
-                i = i + 1
+                pho_name[line]  = it
+                it = it + 1
         return pho_name
     
     def get_id(self, audiopath):
