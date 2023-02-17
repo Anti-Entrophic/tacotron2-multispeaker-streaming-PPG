@@ -9,6 +9,16 @@ import layers
 from utils import load_wav_to_torch, load_filepaths_and_text, load_filepaths_and_PPG
 from text import text_to_sequence
 
+# 测试模块
+import logging
+logging.basicConfig(level=logging.DEBUG #设置日志输出格式
+                ,filename="experiment1.log" #log日志输出的文件位置和文件名
+                ,format="%(asctime)s-%(levelname)s: %(message)s" #日志输出的格式
+                  # -8表示占位符，让输出左对齐，输出长度都为8位
+                ,datefmt="%Y-%m-%d %H:%M:%S" #时间输出的格式
+                ,force=True
+                )
+
 class PPG_MelLoader(torch.utils.data.Dataset):
     """
         1) loads PPG, audio pairs.
@@ -149,6 +159,7 @@ class PPG_MelLoader_test(torch.utils.data.Dataset):
         # 调用resemblyzer的VoiceEncoder做speaker embedding
         encoder = VoiceEncoder()
         fpath = Path(audiopath)
+        logging.debug(audiopath)
         wav = preprocess_wav(fpath)
         # 得到speaker embedding
         speaker_embedding = encoder.embed_utterance(wav)
