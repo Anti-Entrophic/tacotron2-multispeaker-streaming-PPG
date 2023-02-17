@@ -269,7 +269,9 @@ class PPGMelCollate():
         input_lengths, ids_sorted_decreasing = torch.sort(
             torch.LongTensor([len(x[0]) for x in batch]),
             dim=0, descending=True)
-
+        for i in range(len(ids_sorted_decreasing)):
+            PPG = batch[ids_sorted_decreasing[i]][0]
+        
         # Right zero-pad mel-spec
         num_mels = batch[0][1].size(0)
         max_target_len = max([x[1].size(1) for x in batch])
@@ -306,6 +308,7 @@ class TextMelCollate():
         batch: [text_normalized, mel_normalized]
         """
         # Right zero-pad all one-hot text sequences to max input length
+        # 就是为了让text的sequence等长
         input_lengths, ids_sorted_decreasing = torch.sort(
             torch.LongTensor([len(x[0]) for x in batch]),
             dim=0, descending=True)
@@ -315,7 +318,7 @@ class TextMelCollate():
         text_padded.zero_()
         for i in range(len(ids_sorted_decreasing)):
             text = batch[ids_sorted_decreasing[i]][0]
-            # 表示取第i行，然后是text第0维度的长度的数据量
+            # 表示把text赋值给text_padded第i行，然后是text第0维度的长度的数据，
             text_padded[i, :text.size(0)] = text
 
         # Right zero-pad mel-spec
