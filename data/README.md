@@ -12,3 +12,7 @@
 3、phoneme.characters
 
 所有音素
+
+4、phoneme_test_wav.csv
+
+改了文件路径，但是好像还是有问题？
