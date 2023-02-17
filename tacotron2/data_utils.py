@@ -91,7 +91,108 @@ class PPG_MelLoader(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         # 等于是按行读入
-        return self.get_mel_PPG_id_pair(self.audiopaths_and_PPG[index])
+        return self.get_mel_PPG_pair(self.audiopaths_and_PPG[index])
+
+    def __len__(self):
+        return len(self.audiopaths_and_PPG)
+
+class PPG_MelLoader_test(torch.utils.data.Dataset):
+    """
+        test phoneme_train_corpus.csv
+    """
+    def __init__(self, audiopaths_and_PPG, hparams):
+        # 这个时候audiopaths_and_PPG是一个列表套列表[[audiopaths,PPGpath],[audiopaths,PPGpath]...]
+        # 其中audiopaths是音频路径，PPGpath是存储PPG的npy文件
+        self.audiopaths_and_PPG = load_filepaths_and_PPG(audiopaths_and_PPG)
+        
+        self.max_wav_value = hparams.max_wav_value
+        self.sampling_rate = hparams.sampling_rate
+        self.load_mel_from_disk = hparams.load_mel_from_disk
+        self.stft = layers.TacotronSTFT(
+            hparams.filter_length, hparams.hop_length, hparams.win_length,
+            hparams.n_mel_channels, hparams.sampling_rate, hparams.mel_fmin,
+            hparams.mel_fmax)
+        random.seed(hparams.seed)
+        # shuffle一下，让原来按顺序读入变成乱序
+        random.shuffle(self.audiopaths_and_PPG)
+
+    def get_mel_PPG_pair(self, audiopath_and_PPG):
+        # separate audiopath and PPG
+        # 这里后面的不是PPG了，是一长串列表里面是音素。
+        audiopath, PPG = audiopath_and_PPG[0], audiopath_and_PPG[1]
+        
+        print(type(PPG))
+        
+        # 首先我要先建立一个dict，对应音素和序号。
+        pho_map = create_map("/content/tacotron2/data/phoneme.characters")
+        
+        # 先获取PPG和speaker_embedding
+        speaker_embedding = self.get_id(audiopath)
+        
+        PPG = self.get_ppg(PPG, speaker_embedding, pho_map)
+        
+        mel = self.get_mel(audiopath)
+        return (PPG, mel)
+
+    def create_map(self, filepath):
+        # 建立音素到序号的映射
+        with open(filename, encoding='utf-8') as f:
+            it = 0
+            pho_name = {}
+            for line in f：
+                pho_name[line]  = i
+                i = i + 1
+        return pho_name
+    
+    def get_id(self, audiopath):
+        # 调用resemblyzer的VoiceEncoder做speaker embedding
+        encoder = VoiceEncoder()
+        fpath = Path(audiopath)
+        wav = preprocess_wav(fpath)
+        # 得到speaker embedding
+        speaker_embedding = encoder.embed_utterance(wav)
+        # 输出调试信息
+        # np.set_printoptions(precision=3, suppress=True)
+        # print(speaker_embedding)
+        #
+        return speaker_embedding
+    
+    def get_mel(self, filename):
+        if not self.load_mel_from_disk:
+            audio, sampling_rate = load_wav_to_torch(filename)
+            if sampling_rate != self.stft.sampling_rate:
+                raise ValueError("{} {} SR doesn't match target {} SR".format(
+                    sampling_rate, self.stft.sampling_rate))
+            audio_norm = audio / self.max_wav_value
+            audio_norm = audio_norm.unsqueeze(0)
+            audio_norm = torch.autograd.Variable(audio_norm, requires_grad=False)
+            melspec = self.stft.mel_spectrogram(audio_norm)
+            melspec = torch.squeeze(melspec, 0)
+        else:
+            melspec = torch.from_numpy(np.load(filename))
+            assert melspec.size(0) == self.stft.n_mel_channels, (
+                'Mel dimension mismatch: given {}, expected {}'.format(
+                    melspec.size(0), self.stft.n_mel_channels))
+
+        return melspec
+
+    def get_ppg(self, PPG, speaker_embedding, pho_map):
+        # 传入的是一个包含音素，由空格分隔的字符串
+        # 分割完得到一个列表
+        
+        pho_id_list = [pho_map[pho] for pho in PPG.split()]
+        
+        # 这里的PPG就是对应的ont-hot向量
+        PPG_temp = np.eye(72)[arr]
+        
+        # 应该还要动model.py里的Tacotron2 Class. 原本TextMelLoader只是传出text的sequence, 之后是在Tacotron2 Class里每个embedding成512维
+        for frame in PPG_temp:
+            frame = np.append(frame, speaker_embedding)
+        return PPG_temp
+
+    def __getitem__(self, index):
+        # 等于是按行读入
+        return self.get_mel_PPG_pair(self.audiopaths_and_PPG[index])
 
     def __len__(self):
         return len(self.audiopaths_and_PPG)
