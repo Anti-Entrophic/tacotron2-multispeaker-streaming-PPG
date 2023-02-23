@@ -10,9 +10,11 @@ now:  input: &nbsp; PPG-wav pairs
 
 &nbsp;&nbsp;   [batch_size, frames, 音素个数]
 
+The original TextMelLoader :
+
 ![image](https://github.com/Anti-Entrophic/tacotron2-multispeaker-streaming-PPG/blob/main/IMG/load_data.jpg)
 
-这部分感觉改完了，后面维度还有一点小问题
+这部分基本上改完了，后面维度还有一点小问题
 
 inference:
 
@@ -33,4 +35,3 @@ inference:
 5、wavenet前还需要一个buffer
 
 ## update  
-2023.2.12 开始干活
