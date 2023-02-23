@@ -12,7 +12,7 @@ from text import text_to_sequence
 # 测试模块
 import logging
 logging.basicConfig(level=logging.DEBUG #设置日志输出格式
-                ,filename="experiment1.log" #log日志输出的文件位置和文件名
+                ,filename="experiment2.log" #log日志输出的文件位置和文件名
                 ,format="%(asctime)s-%(levelname)s: %(message)s" #日志输出的格式
                   # -8表示占位符，让输出左对齐，输出长度都为8位
                 ,datefmt="%Y-%m-%d %H:%M:%S" #时间输出的格式
@@ -135,12 +135,11 @@ class PPG_MelLoader_test(torch.utils.data.Dataset):
         
         # 首先我要先建立一个dict，对应音素和序号。
         pho_map = self.create_map("/content/tacotron2/data/phoneme.characters")
-        print("建立了音素和序号的map")
         
         # 先获取PPG和speaker_embedding
-        speaker_embedding = self.get_id(audiopath)
+        # speaker_embedding = self.get_id(audiopath)
         
-        PPG = self.get_ppg(PPG, speaker_embedding, pho_map)
+        PPG = self.get_ppg(PPG, pho_map)
         
         mel = self.get_mel(audiopath)
         return (PPG, mel)
@@ -151,7 +150,7 @@ class PPG_MelLoader_test(torch.utils.data.Dataset):
             it = 0
             pho_name = {}
             for line in f :
-                pho_name[line]  = it
+                pho_name[line.strip()]  = it
                 it = it + 1
         return pho_name
     
@@ -188,18 +187,18 @@ class PPG_MelLoader_test(torch.utils.data.Dataset):
 
         return melspec
 
-    def get_ppg(self, PPG, speaker_embedding, pho_map):
+    def get_ppg(self, PPG, pho_map):
         # 传入的是一个包含音素，由空格分隔的字符串
         # 分割完得到一个列表
         
         pho_id_list = [pho_map[pho] for pho in PPG.split()]
-        
+
         # 这里的PPG就是对应的ont-hot向量
-        PPG_temp = np.eye(72)[arr]
-        
+        PPG_temp = np.eye(72)[pho_id_list]
+        PPG_temp = torch.from_numpy(PPG_temp)
         # 应该还要动model.py里的Tacotron2 Class. 原本TextMelLoader只是传出text的sequence, 之后是在Tacotron2 Class里每个embedding成512维
-        for frame in PPG_temp:
-            frame = np.append(frame, speaker_embedding)
+        # for frame in PPG_temp:
+        #    frame = np.append(frame, speaker_embedding)
         return PPG_temp
 
     def __getitem__(self, index):
@@ -281,6 +280,7 @@ class PPGMelCollate():
         input_lengths, ids_sorted_decreasing = torch.sort(
             torch.LongTensor([len(x[0]) for x in batch]),
             dim=0, descending=True)
+
         for i in range(len(ids_sorted_decreasing)):
             PPG = batch[ids_sorted_decreasing[i]][0]
         
@@ -303,8 +303,7 @@ class PPGMelCollate():
             gate_padded[i, mel.size(1)-1:] = 1
             output_lengths[i] = mel.size(1)
 
-        return PPG, mel_padded, gate_padded, \
-            output_lengths
+        return PPG, input_lengths, mel_padded, gate_padded, output_lengths
 
 
 class TextMelCollate():
