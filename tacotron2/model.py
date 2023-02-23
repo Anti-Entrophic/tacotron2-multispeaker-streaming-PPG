@@ -4,8 +4,8 @@ from torch.autograd import Variable
 from torch import nn
 from torch.nn import functional as F
 from layers import ConvNorm, LinearNorm
-from utils import to_gpu, get_mask_from_lengths
-
+from utils import to_gpu, get_mask_from_lengths, to_gpu_PPG
+import logging
 
 class LocationLayer(nn.Module):
     def __init__(self, attention_n_filters, attention_kernel_size,
@@ -152,6 +152,9 @@ class Encoder(nn.Module):
         - Bidirectional LSTM
     """
     def __init__(self, hparams):
+        logging.debug("encoder参数")
+        logging.debug(hparams.encoder_embedding_dim)
+        logging.debug(hparams.encoder_kernel_size)
         super(Encoder, self).__init__()
 
         convolutions = []
@@ -171,6 +174,10 @@ class Encoder(nn.Module):
                             batch_first=True, bidirectional=True)
 
     def forward(self, x, input_lengths):
+        logging.debug("音素数：")
+        logging.debug(len(x))
+        logging.debug("帧数：")
+        logging.debug(len(x[0]))
         for conv in self.convolutions:
             x = F.dropout(F.relu(conv(x)), 0.5, self.training)
         
@@ -473,15 +480,17 @@ class Tacotron2(nn.Module):
 
     def parse_batch(self, batch):
         # 训练过程中，数据每次都先送到这里
-        PPG, mel_padded, gate_padded, \
-            output_lengths = batch
-        PPG = to_gpu(PPG).float()
+        PPG, input_lengths, mel_padded, gate_padded, output_lengths = batch
+        
+        PPG = to_gpu_PPG(PPG).float()
+        input_lengths = to_gpu(input_lengths).long()
+        max_len = torch.max(input_lengths.data).item()
         mel_padded = to_gpu(mel_padded).float()
         gate_padded = to_gpu(gate_padded).float()
         output_lengths = to_gpu(output_lengths).long()
 
         return (
-            (PPG, mel_padded, output_lengths),
+            (PPG, input_lengths, mel_padded, max_len, output_lengths),
             (mel_padded, gate_padded))
 
     def parse_output(self, outputs, output_lengths=None):
@@ -497,14 +506,15 @@ class Tacotron2(nn.Module):
         return outputs
 
     def forward(self, inputs):
-        PPG, mels, output_lengths = inputs
-        output_lengths = output_lengths.data
-        
-        assert 0 ,"在encoder前结束" 
-        encoder_outputs = self.encoder(embedded_inputs, text_lengths)
+        PPG, input_lengths, mels, max_len, output_lengths = inputs
+        input_lengths, output_lengths = input_lengths.data, output_lengths.data
+
+        logging.debug(PPG)
+
+        encoder_outputs = self.encoder(PPG, input_lengths)
 
         mel_outputs, gate_outputs, alignments = self.decoder(
-            encoder_outputs, mels, memory_lengths=text_lengths)
+            encoder_outputs, mels, memory_lengths=input_lengths)
 
         mel_outputs_postnet = self.postnet(mel_outputs)
         mel_outputs_postnet = mel_outputs + mel_outputs_postnet
