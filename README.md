@@ -10,6 +10,10 @@ now:  input: &nbsp; PPG-wav pairs
 
 &nbsp;&nbsp;   [batch_size, frames, 音素个数]
 
+![image](https://github.com/Anti-Entrophic/tacotron2-multispeaker-streaming-PPG/blob/main/IMG/load_data.jpg)
+
+这部分感觉改完了，后面维度还有一点小问题
+
 inference:
 
 ![image](https://github.com/Anti-Entrophic/tacotron2-streaming-PPG/blob/main/IMG/infer.jpg)
