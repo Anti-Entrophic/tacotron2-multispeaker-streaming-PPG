@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.io.wavfile import read
 import torch
-
+import logging
 
 from hparams import create_hparams
 #hparam = create_hparams()
@@ -42,3 +42,10 @@ def to_gpu(x):
     if torch.cuda.is_available():
         x = x.cuda(non_blocking=True)
     return torch.autograd.Variable(x)
+
+def to_gpu_PPG(PPG):
+    for x in PPG:
+      x = x.contiguous()
+      if torch.cuda.is_available():
+        x = x.cuda(non_blocking=True)
+    return torch.autograd.Variable(PPG)
