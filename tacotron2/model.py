@@ -174,9 +174,9 @@ class Encoder(nn.Module):
                             batch_first=True, bidirectional=True)
 
     def forward(self, x, input_lengths):
-        logging.debug("音素数：")
-        logging.debug(len(x))
         logging.debug("帧数：")
+        logging.debug(len(x))
+        logging.debug("音素数：")
         logging.debug(len(x[0]))
         for conv in self.convolutions:
             x = F.dropout(F.relu(conv(x)), 0.5, self.training)
@@ -481,8 +481,8 @@ class Tacotron2(nn.Module):
     def parse_batch(self, batch):
         # 训练过程中，数据每次都先送到这里
         PPG, input_lengths, mel_padded, gate_padded, output_lengths = batch
-        
-        PPG = to_gpu_PPG(PPG).float()
+
+        PPG = to_gpu(PPG).float()
         input_lengths = to_gpu(input_lengths).long()
         max_len = torch.max(input_lengths.data).item()
         mel_padded = to_gpu(mel_padded).float()
@@ -509,10 +509,9 @@ class Tacotron2(nn.Module):
         PPG, input_lengths, mels, max_len, output_lengths = inputs
         input_lengths, output_lengths = input_lengths.data, output_lengths.data
 
-        logging.debug(PPG)
+        PPG_temp = PPG.transpose(1,2)
 
-        encoder_outputs = self.encoder(PPG, input_lengths)
-
+        encoder_outputs = self.encoder(PPG_temp, input_lengths)
         mel_outputs, gate_outputs, alignments = self.decoder(
             encoder_outputs, mels, memory_lengths=input_lengths)
 
