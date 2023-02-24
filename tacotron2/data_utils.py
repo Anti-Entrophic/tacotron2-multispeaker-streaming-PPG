@@ -280,10 +280,16 @@ class PPGMelCollate():
         input_lengths, ids_sorted_decreasing = torch.sort(
             torch.LongTensor([len(x[0]) for x in batch]),
             dim=0, descending=True)
+        max_input_len = input_lengths[0]
 
+        PPG_padded = torch.LongTensor(len(batch), max_input_len, 72) # PPG.size(1)是音素个数
+
+        PPG_padded.zero_()
         for i in range(len(ids_sorted_decreasing)):
             PPG = batch[ids_sorted_decreasing[i]][0]
-        
+            PPG_padded[i, :PPG.size(0)] = PPG
+        # logging.debug(PPG_padded)
+
         # Right zero-pad mel-spec
         num_mels = batch[0][1].size(0)
         max_target_len = max([x[1].size(1) for x in batch])
@@ -303,7 +309,7 @@ class PPGMelCollate():
             gate_padded[i, mel.size(1)-1:] = 1
             output_lengths[i] = mel.size(1)
 
-        return PPG, input_lengths, mel_padded, gate_padded, output_lengths
+        return PPG_padded, input_lengths, mel_padded, gate_padded, output_lengths
 
 
 class TextMelCollate():
