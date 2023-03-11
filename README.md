@@ -37,3 +37,5 @@ inference:
 5、wavenet前还需要一个buffer
 
 ## update  
+
+在LibriSpeech的train-clean-100训练集上要8h一个epoch，有点太慢了。
